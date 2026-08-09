@@ -1,0 +1,125 @@
+@import './variables.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Global Reset & Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--color-obsidian);
+  color: var(--color-aged-ivory);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-obsidian);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(170, 134, 84, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-antique-brass);
+}
+
+/* Selection Color */
+::selection {
+  background-color: var(--color-antique-brass);
+  color: var(--color-obsidian);
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6, .font-serif {
+  font-family: var(--font-serif-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.font-serif-accent {
+  font-family: var(--font-serif-accent);
+}
+
+.font-sans-clean {
+  font-family: var(--font-sans);
+}
+
+/* Tracking / Letter Spacing Utilities */
+.tracking-aristocrat {
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.tracking-wide-editorial {
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+}
+
+/* Custom Input Styling for Luxury Reservation Form */
+.luxury-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(170, 134, 84, 0.3);
+  padding: 0.85rem 0.25rem;
+  color: var(--color-aged-ivory);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+  border-radius: 0;
+}
+
+.luxury-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-soft-champagne);
+  box-shadow: 0 4px 15px -5px rgba(170, 134, 84, 0.3);
+}
+
+.luxury-input::placeholder {
+  color: rgba(167, 156, 140, 0.45);
+  font-weight: 300;
+}
+
+.bg-ivory-input {
+  border-bottom-color: rgba(33, 26, 22, 0.3);
+  color: var(--color-obsidian);
+}
+
+.bg-ivory-input:focus {
+  border-bottom-color: var(--color-antique-brass);
+}
+
+/* Leader Line Dotted Utility */
+.leader-dots {
+  flex-grow: 1;
+  border-bottom: 1px dotted rgba(170, 134, 84, 0.35);
+  margin: 0 1rem;
+  align-self: baseline;
+  position: relative;
+  top: -4px;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

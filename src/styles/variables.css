@@ -1,0 +1,54 @@
+:root {
+  /* Color Palette */
+  --color-obsidian: #11100E;
+  --color-espresso: #211A16;
+  --color-oxblood: #401D20;
+  --color-aged-ivory: #F3EBDD;
+  --color-warm-parchment: #E5D8C5;
+  --color-antique-brass: #AA8654;
+  --color-brass-glow: rgba(170, 134, 84, 0.25);
+  --color-soft-champagne: #C7AA7A;
+  --color-muted-stone: #A79C8C;
+  --color-charcoal-border: rgba(170, 134, 84, 0.2);
+
+  /* Typography */
+  --font-serif-display: 'Cormorant Garamond', 'Bodoni Moda', Georgia, serif;
+  --font-serif-accent: 'Bodoni Moda', 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Shadows & Glows */
+  --shadow-subtle: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 20px 40px -15px rgba(17, 16, 14, 0.8);
+  --shadow-brass: 0 0 25px rgba(170, 134, 84, 0.15);
+
+  /* Spacing & Transitions */
+  --transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Background Texture Utility */
+.bg-noise {
+  background-image: radial-gradient(rgba(170, 134, 84, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.bg-aged-paper {
+  background-color: var(--color-aged-ivory);
+  color: var(--color-obsidian);
+  background-image: radial-gradient(rgba(33, 26, 22, 0.04) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+/* 1px Antique Brass Rules */
+.border-brass-hairline {
+  border-color: rgba(170, 134, 84, 0.25);
+}
+
+.hover-brass-glow {
+  transition: var(--transition-smooth);
+}
+.hover-brass-glow:hover {
+  box-shadow: 0 0 30px rgba(170, 134, 84, 0.2);
+  border-color: rgba(170, 134, 84, 0.6);
+}
