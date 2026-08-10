@@ -13,6 +13,11 @@ const reservationFormSchema = z.object({
 
 type ReservationFormData = z.infer<typeof reservationFormSchema>;
 
+// Reservations are emailed through FormSubmit, which requires no account or
+// API key. It only accepts browser-originated requests, so this is called
+// from the client rather than from the API route.
+const RESERVATION_RELAY_ENDPOINT = 'https://formsubmit.co/ajax/romit.chakraborty2002@gmail.com';
+
 export const ReservationSection: React.FC = () => {
   const [formData, setFormData] = useState<ReservationFormData>({
     name: '',
@@ -56,20 +61,42 @@ export const ReservationSection: React.FC = () => {
     setStatus('submitting');
     setErrorMessage('');
 
+    // The email relay only accepts browser-originated requests, so the
+    // notification is sent from here rather than from the API route.
     try {
-      const response = await fetch('/api/reservations', {
+      // Also record the reservation server-side so it survives in the logs
+      // even if the mail relay is unavailable. Failures here are not fatal.
+      fetch('/api/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
+      }).catch(() => undefined);
+
+      const response = await fetch(RESERVATION_RELAY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: `Potluck RSVP — ${formData.name} (${formData.partySize})`,
+          _template: 'table',
+          _captcha: 'false',
+          Name: formData.name,
+          Party: formData.partySize,
+          'Dietary note': formData.dietaryNote?.trim() || 'None',
+          Message: formData.message?.trim() || 'None',
+          Event: 'The Potluck Society — August 12, 2026'
+        })
       });
 
-      const resData = await response.json();
+      // The relay answers 200 even when it refuses to send, signalling the
+      // real outcome with a "success" field that is the string "true".
+      const resData = await response.json().catch(() => ({}));
 
-      if (response.ok && resData.success) {
+      if (response.ok && String(resData.success) === 'true') {
         setStatus('success');
       } else {
+        console.error('[RESERVATION RELAY]', response.status, resData);
         setStatus('error');
-        setErrorMessage(resData.error || "We couldn't complete the reservation. Please try again.");
+        setErrorMessage("We couldn't complete the reservation. Please try again.");
       }
     } catch (err) {
       console.error('[RESERVATION SUBMIT ERROR]', err);

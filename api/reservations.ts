@@ -8,14 +8,6 @@ const reservationSchema = z.object({
   website_url: z.string().optional() // Honeypot field
 });
 
-// Where reservation emails are delivered. Override with RSVP_EMAIL in the
-// Vercel project settings to keep the address out of this file.
-const RSVP_EMAIL = process.env.RSVP_EMAIL || 'romit.chakraborty2002@gmail.com';
-
-// FormSubmit relays a POST to an email address with no account or API key.
-// The first message to a new address triggers a one-time confirmation link.
-const RELAY_ENDPOINT = `https://formsubmit.co/ajax/${encodeURIComponent(RSVP_EMAIL)}`;
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -53,66 +45,13 @@ export default async function handler(req: any, res: any) {
     // Recoverable from the Vercel runtime logs if email delivery ever fails.
     console.log('[RESERVATION]', JSON.stringify({ name, partySize, dietaryNote, message, timestampLA }));
 
-    let notified = false;
-    let reason: string | null = null;
-
-    const siteOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : 'https://i-cook-rho.vercel.app';
-
-    try {
-      const relayRes = await fetch(RELAY_ENDPOINT, {
-        method: 'POST',
-        // FormSubmit rejects requests without an Origin/Referer, which a
-        // server-side fetch does not send on its own.
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Origin: siteOrigin,
-          Referer: `${siteOrigin}/`
-        },
-        body: JSON.stringify({
-          _subject: `Potluck RSVP — ${name} (${partySize})`,
-          _template: 'table',
-          _captcha: 'false',
-          Name: name,
-          Party: partySize,
-          'Dietary note': dietaryNote && dietaryNote.trim() ? dietaryNote.trim() : 'None',
-          Message: message && message.trim() ? message.trim() : 'None',
-          Received: timestampLA,
-          Event: 'The Potluck Society — August 12, 2026'
-        })
-      });
-
-      const relayBody = await relayRes.text();
-
-      // The relay answers 200 even when it refuses to send, signalling the
-      // real outcome with a "success" field that is the string "true".
-      let relaySucceeded = false;
-      try {
-        relaySucceeded = String(JSON.parse(relayBody)?.success) === 'true';
-      } catch {
-        relaySucceeded = false;
-      }
-
-      if (relayRes.ok && relaySucceeded) {
-        notified = true;
-        console.log(`[RELAY SUCCESS] ${relayBody.slice(0, 200)}`);
-      } else {
-        reason = relayRes.ok ? 'relay_refused' : `relay_http_${relayRes.status}`;
-        console.error(`[RELAY ERROR] ${relayRes.status} ${relayBody.slice(0, 300)}`);
-      }
-    } catch (relayErr: any) {
-      reason = 'relay_unreachable';
-      console.error('[RELAY ERROR]', relayErr?.message || relayErr);
-    }
-
-    // The guest is confirmed either way; the reservation is already in the logs.
+    // The email itself is sent from the browser, because the relay rejects
+    // server-side requests. This route exists purely so every reservation is
+    // also captured in the Vercel runtime logs as a backup record.
     return res.status(200).json({
       success: true,
       message: 'Reservation confirmed for August 12, 2026',
-      notified,
-      ...(notified ? {} : { reason, build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7) }),
+      logged: true,
       data: { name, partySize, timestamp: timestampLA }
     });
   } catch (err: any) {
