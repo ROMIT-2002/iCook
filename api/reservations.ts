@@ -69,10 +69,25 @@ ${timestampLA}`;
     // internal errors to the guest.
     let notified = false;
     let notifyError: string | null = null;
+    // Non-sensitive reason code so delivery failures are diagnosable from the
+    // response alone. Never contains credentials or phone numbers.
+    let reason: string | null = null;
 
     if (!accountSid || !authToken || accountSid.includes('xxxx')) {
+      reason = !accountSid && !authToken
+        ? 'credentials_missing_both'
+        : (!accountSid ? 'credentials_missing_account_sid' : (!authToken ? 'credentials_missing_auth_token' : 'credentials_placeholder'));
       notifyError = 'Twilio credentials are not configured in the environment.';
-      console.warn('[RESERVATION] ' + notifyError);
+      console.warn(`[RESERVATION] ${notifyError} (${reason})`);
+    } else if (!accountSid.startsWith('AC')) {
+      // An API Key SID (SK...) is a common mix-up and cannot authenticate here.
+      reason = `account_sid_wrong_prefix_${accountSid.slice(0, 2)}`;
+      notifyError = 'TWILIO_ACCOUNT_SID must be the Account SID beginning with AC.';
+      console.error(`[RESERVATION] ${notifyError} (got prefix ${accountSid.slice(0, 2)})`);
+    } else if (!fromNumber.startsWith('whatsapp:') || !toNumber.startsWith('whatsapp:')) {
+      reason = 'missing_whatsapp_prefix';
+      notifyError = 'FROM/TO numbers must start with "whatsapp:".';
+      console.error('[RESERVATION] ' + notifyError);
     } else {
       try {
         const client = twilio(accountSid, authToken);
@@ -96,6 +111,7 @@ ${timestampLA}`;
         console.log(`[TWILIO SUCCESS] SID ${twilioRes.sid} -> ${toNumber}`);
       } catch (twilioErr: any) {
         notifyError = twilioErr?.message || String(twilioErr);
+        reason = twilioErr?.code ? `twilio_${twilioErr.code}` : 'twilio_error';
         console.error(`[TWILIO ERROR] code=${twilioErr?.code} status=${twilioErr?.status} ${notifyError}`);
       }
     }
@@ -105,6 +121,7 @@ ${timestampLA}`;
       success: true,
       message: 'Reservation confirmed for August 12, 2026',
       notified,
+      ...(notified ? {} : { reason }),
       data: { name, partySize, timestamp: timestampLA }
     });
   } catch (err: any) {
