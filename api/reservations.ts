@@ -1,11 +1,4 @@
-import { createHash } from 'crypto';
 import { z } from 'zod';
-import twilio from 'twilio';
-
-// Short, non-reversible fingerprint so configuration can be verified without
-// exposing phone numbers or credentials on a public endpoint.
-const fingerprint = (v: string | undefined) =>
-  v ? createHash('sha256').update(v).digest('hex').slice(0, 8) : 'unset';
 
 const reservationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(80, 'Name max 80 characters'),
@@ -14,6 +7,14 @@ const reservationSchema = z.object({
   message: z.string().max(500, 'Message max 500 characters').optional().or(z.literal('')),
   website_url: z.string().optional() // Honeypot field
 });
+
+// Where reservation emails are delivered. Override with RSVP_EMAIL in the
+// Vercel project settings to keep the address out of this file.
+const RSVP_EMAIL = process.env.RSVP_EMAIL || 'romit.chakraborty2002@gmail.com';
+
+// FormSubmit relays a POST to an email address with no account or API key.
+// The first message to a new address triggers a one-time confirmation link.
+const RELAY_ENDPOINT = `https://formsubmit.co/ajax/${encodeURIComponent(RSVP_EMAIL)}`;
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -48,90 +49,70 @@ export default async function handler(req: any, res: any) {
       timeStyle: 'medium'
     }).format(new Date());
 
-    const formattedMessage =
-`🍽️ NEW POTLUCK RESERVATION
-
-Guest: ${name}
-Party: ${partySize}
-Dietary note: ${dietaryNote && dietaryNote.trim() ? dietaryNote.trim() : 'None'}
-Message: ${message && message.trim() ? message.trim() : 'None'}
-
-Event: The Potluck Society
-Date: August 12, 2026
-
-Reservation received:
-${timestampLA}`;
-
-    // Always log the reservation so it is never lost, even if Twilio fails.
+    // Logged before sending so a reservation is never lost to a relay outage.
+    // Recoverable from the Vercel runtime logs if email delivery ever fails.
     console.log('[RESERVATION]', JSON.stringify({ name, partySize, dietaryNote, message, timestampLA }));
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-    // Notifications go out over SMS, not WhatsApp. WhatsApp requires an opt-in
-    // that expires every 24 hours, which silently drops reservations that
-    // arrive outside the window. SMS has no such restriction.
-    //
-    // The numbers are read from the existing WhatsApp variables so no
-    // environment changes are needed; the "whatsapp:" prefix is stripped.
-    const stripChannel = (v: string | undefined) => (v || '').trim().replace(/^whatsapp:\s*/i, '');
-    const smsFrom = stripChannel(process.env.TWILIO_SMS_FROM || process.env.TWILIO_WHATSAPP_FROM);
-    const smsTo = stripChannel(process.env.RESERVATION_SMS_TO || process.env.RESERVATION_WHATSAPP_TO) || '+13464558004';
-
     let notified = false;
-    let notifyError: string | null = null;
-    // Non-sensitive reason code so delivery failures are diagnosable from the
-    // response alone. Never contains credentials or phone numbers.
     let reason: string | null = null;
 
-    if (!accountSid || !authToken || accountSid.includes('xxxx')) {
-      reason = !accountSid && !authToken
-        ? 'credentials_missing_both'
-        : (!accountSid ? 'credentials_missing_account_sid' : (!authToken ? 'credentials_missing_auth_token' : 'credentials_placeholder'));
-      notifyError = 'Twilio credentials are not configured in the environment.';
-      console.warn(`[RESERVATION] ${notifyError} (${reason})`);
-    } else if (!accountSid.startsWith('AC')) {
-      // An API Key SID (SK...) is a common mix-up and cannot authenticate here.
-      reason = `account_sid_wrong_prefix_${accountSid.slice(0, 2)}`;
-      notifyError = 'TWILIO_ACCOUNT_SID must be the Account SID beginning with AC.';
-      console.error(`[RESERVATION] ${notifyError} (got prefix ${accountSid.slice(0, 2)})`);
-    } else if (!smsFrom.startsWith('+') || !smsTo.startsWith('+')) {
-      reason = 'numbers_not_e164';
-      notifyError = 'Sender and recipient must be E.164 numbers, e.g. +13464558004.';
-      console.error('[RESERVATION] ' + notifyError);
-    } else {
+    const siteOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : 'https://i-cook-rho.vercel.app';
+
+    try {
+      const relayRes = await fetch(RELAY_ENDPOINT, {
+        method: 'POST',
+        // FormSubmit rejects requests without an Origin/Referer, which a
+        // server-side fetch does not send on its own.
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Origin: siteOrigin,
+          Referer: `${siteOrigin}/`
+        },
+        body: JSON.stringify({
+          _subject: `Potluck RSVP — ${name} (${partySize})`,
+          _template: 'table',
+          _captcha: 'false',
+          Name: name,
+          Party: partySize,
+          'Dietary note': dietaryNote && dietaryNote.trim() ? dietaryNote.trim() : 'None',
+          Message: message && message.trim() ? message.trim() : 'None',
+          Received: timestampLA,
+          Event: 'The Potluck Society — August 12, 2026'
+        })
+      });
+
+      const relayBody = await relayRes.text();
+
+      // The relay answers 200 even when it refuses to send, signalling the
+      // real outcome with a "success" field that is the string "true".
+      let relaySucceeded = false;
       try {
-        const client = twilio(accountSid, authToken);
-        const twilioRes = await client.messages.create({
-          from: smsFrom,
-          to: smsTo,
-          body: formattedMessage
-        });
-        notified = true;
-        console.log(`[TWILIO SUCCESS] SMS ${twilioRes.sid}`);
-      } catch (twilioErr: any) {
-        notifyError = twilioErr?.message || String(twilioErr);
-        reason = twilioErr?.code ? `twilio_${twilioErr.code}` : 'twilio_error';
-        console.error(`[TWILIO ERROR] code=${twilioErr?.code} status=${twilioErr?.status} ${notifyError}`);
+        relaySucceeded = String(JSON.parse(relayBody)?.success) === 'true';
+      } catch {
+        relaySucceeded = false;
       }
+
+      if (relayRes.ok && relaySucceeded) {
+        notified = true;
+        console.log(`[RELAY SUCCESS] ${relayBody.slice(0, 200)}`);
+      } else {
+        reason = relayRes.ok ? 'relay_refused' : `relay_http_${relayRes.status}`;
+        console.error(`[RELAY ERROR] ${relayRes.status} ${relayBody.slice(0, 300)}`);
+      }
+    } catch (relayErr: any) {
+      reason = 'relay_unreachable';
+      console.error('[RELAY ERROR]', relayErr?.message || relayErr);
     }
 
-    // The guest's reservation is recorded regardless of notification delivery.
+    // The guest is confirmed either way; the reservation is already in the logs.
     return res.status(200).json({
       success: true,
       message: 'Reservation confirmed for August 12, 2026',
       notified,
-      ...(notified
-        ? {}
-        : {
-            reason,
-            // Which revision is actually serving, and which send path it took.
-            // The repo is public, so the commit SHA is not sensitive.
-            build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7),
-            channel: 'sms',
-            fromFp: fingerprint(smsFrom),
-            toFp: fingerprint(smsTo)
-          }),
+      ...(notified ? {} : { reason, build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7) }),
       data: { name, partySize, timestamp: timestampLA }
     });
   } catch (err: any) {
