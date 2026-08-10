@@ -63,7 +63,19 @@ ${timestampLA}`;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
     const toNumber = process.env.RESERVATION_WHATSAPP_TO || 'whatsapp:+13464558004';
-    const contentSid = process.env.TWILIO_CONTENT_SID;
+    // Only treat TWILIO_CONTENT_SID as usable if it is a real Content SID.
+    // An unset-but-present placeholder (HXxxxx...) would otherwise send
+    // contentVariables without a valid contentSid, which Twilio rejects
+    // with error 21654. Falling back to a plain body is always safe.
+    const rawContentSid = process.env.TWILIO_CONTENT_SID?.trim();
+    const contentSid =
+      rawContentSid && rawContentSid.startsWith('HX') && !rawContentSid.toLowerCase().includes('xxxx')
+        ? rawContentSid
+        : undefined;
+
+    if (rawContentSid && !contentSid) {
+      console.warn(`[RESERVATION] Ignoring invalid TWILIO_CONTENT_SID (prefix ${rawContentSid.slice(0, 2)}); falling back to plain message body.`);
+    }
 
     // `notified` tells you whether WhatsApp actually went out, without leaking
     // internal errors to the guest.

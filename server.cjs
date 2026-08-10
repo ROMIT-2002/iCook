@@ -67,7 +67,13 @@ ${timestampLA}`;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
     const toNumber = process.env.RESERVATION_WHATSAPP_TO || 'whatsapp:+13464558004';
-    const contentSid = process.env.TWILIO_CONTENT_SID;
+    // Ignore a placeholder Content SID; sending contentVariables without a
+    // valid contentSid fails with Twilio error 21654.
+    const rawContentSid = process.env.TWILIO_CONTENT_SID && process.env.TWILIO_CONTENT_SID.trim();
+    const contentSid =
+      rawContentSid && rawContentSid.startsWith('HX') && !rawContentSid.toLowerCase().includes('xxxx')
+        ? rawContentSid
+        : undefined;
 
     if (accountSid && authToken && !accountSid.includes('xxxx')) {
       try {
