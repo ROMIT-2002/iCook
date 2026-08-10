@@ -133,7 +133,15 @@ ${timestampLA}`;
       success: true,
       message: 'Reservation confirmed for August 12, 2026',
       notified,
-      ...(notified ? {} : { reason }),
+      ...(notified
+        ? {}
+        : {
+            reason,
+            // Which revision is actually serving, and which send path it took.
+            // The repo is public, so the commit SHA is not sensitive.
+            build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7),
+            usedTemplate: Boolean(contentSid)
+          }),
       data: { name, partySize, timestamp: timestampLA }
     });
   } catch (err: any) {
