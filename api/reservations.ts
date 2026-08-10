@@ -67,24 +67,17 @@ ${timestampLA}`;
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
-    const toNumber = process.env.RESERVATION_WHATSAPP_TO || 'whatsapp:+13464558004';
-    // Only treat TWILIO_CONTENT_SID as usable if it is a real Content SID.
-    // An unset-but-present placeholder (HXxxxx...) would otherwise send
-    // contentVariables without a valid contentSid, which Twilio rejects
-    // with error 21654. Falling back to a plain body is always safe.
-    const rawContentSid = process.env.TWILIO_CONTENT_SID?.trim();
-    const contentSid =
-      rawContentSid && rawContentSid.startsWith('HX') && !rawContentSid.toLowerCase().includes('xxxx')
-        ? rawContentSid
-        : undefined;
 
-    if (rawContentSid && !contentSid) {
-      console.warn(`[RESERVATION] Ignoring invalid TWILIO_CONTENT_SID (prefix ${rawContentSid.slice(0, 2)}); falling back to plain message body.`);
-    }
+    // Notifications go out over SMS, not WhatsApp. WhatsApp requires an opt-in
+    // that expires every 24 hours, which silently drops reservations that
+    // arrive outside the window. SMS has no such restriction.
+    //
+    // The numbers are read from the existing WhatsApp variables so no
+    // environment changes are needed; the "whatsapp:" prefix is stripped.
+    const stripChannel = (v: string | undefined) => (v || '').trim().replace(/^whatsapp:\s*/i, '');
+    const smsFrom = stripChannel(process.env.TWILIO_SMS_FROM || process.env.TWILIO_WHATSAPP_FROM);
+    const smsTo = stripChannel(process.env.RESERVATION_SMS_TO || process.env.RESERVATION_WHATSAPP_TO) || '+13464558004';
 
-    // `notified` tells you whether WhatsApp actually went out, without leaking
-    // internal errors to the guest.
     let notified = false;
     let notifyError: string | null = null;
     // Non-sensitive reason code so delivery failures are diagnosable from the
@@ -102,31 +95,20 @@ ${timestampLA}`;
       reason = `account_sid_wrong_prefix_${accountSid.slice(0, 2)}`;
       notifyError = 'TWILIO_ACCOUNT_SID must be the Account SID beginning with AC.';
       console.error(`[RESERVATION] ${notifyError} (got prefix ${accountSid.slice(0, 2)})`);
-    } else if (!fromNumber.startsWith('whatsapp:') || !toNumber.startsWith('whatsapp:')) {
-      reason = 'missing_whatsapp_prefix';
-      notifyError = 'FROM/TO numbers must start with "whatsapp:".';
+    } else if (!smsFrom.startsWith('+') || !smsTo.startsWith('+')) {
+      reason = 'numbers_not_e164';
+      notifyError = 'Sender and recipient must be E.164 numbers, e.g. +13464558004.';
       console.error('[RESERVATION] ' + notifyError);
     } else {
       try {
         const client = twilio(accountSid, authToken);
-
-        const messagePayload: any = { from: fromNumber, to: toNumber };
-
-        if (contentSid) {
-          messagePayload.contentSid = contentSid;
-          messagePayload.contentVariables = JSON.stringify({
-            1: name,
-            2: partySize,
-            3: dietaryNote || 'None',
-            4: message || 'None'
-          });
-        } else {
-          messagePayload.body = formattedMessage;
-        }
-
-        const twilioRes = await client.messages.create(messagePayload);
+        const twilioRes = await client.messages.create({
+          from: smsFrom,
+          to: smsTo,
+          body: formattedMessage
+        });
         notified = true;
-        console.log(`[TWILIO SUCCESS] SID ${twilioRes.sid} -> ${toNumber}`);
+        console.log(`[TWILIO SUCCESS] SMS ${twilioRes.sid}`);
       } catch (twilioErr: any) {
         notifyError = twilioErr?.message || String(twilioErr);
         reason = twilioErr?.code ? `twilio_${twilioErr.code}` : 'twilio_error';
@@ -146,10 +128,9 @@ ${timestampLA}`;
             // Which revision is actually serving, and which send path it took.
             // The repo is public, so the commit SHA is not sensitive.
             build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7),
-            usedTemplate: Boolean(contentSid),
-            fromFp: fingerprint(fromNumber),
-            toFp: fingerprint(toNumber),
-            sidFp: fingerprint(accountSid)
+            channel: 'sms',
+            fromFp: fingerprint(smsFrom),
+            toFp: fingerprint(smsTo)
           }),
       data: { name, partySize, timestamp: timestampLA }
     });
