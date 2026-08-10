@@ -1,5 +1,11 @@
+import { createHash } from 'crypto';
 import { z } from 'zod';
 import twilio from 'twilio';
+
+// Short, non-reversible fingerprint so configuration can be verified without
+// exposing phone numbers or credentials on a public endpoint.
+const fingerprint = (v: string | undefined) =>
+  v ? createHash('sha256').update(v).digest('hex').slice(0, 8) : 'unset';
 
 const reservationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(80, 'Name max 80 characters'),
@@ -140,7 +146,10 @@ ${timestampLA}`;
             // Which revision is actually serving, and which send path it took.
             // The repo is public, so the commit SHA is not sensitive.
             build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7),
-            usedTemplate: Boolean(contentSid)
+            usedTemplate: Boolean(contentSid),
+            fromFp: fingerprint(fromNumber),
+            toFp: fingerprint(toNumber),
+            sidFp: fingerprint(accountSid)
           }),
       data: { name, partySize, timestamp: timestampLA }
     });
