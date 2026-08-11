@@ -80,6 +80,18 @@ export const MENU_ITEMS: MenuItemData[] = [
     layoutType: 'TypeA'
   },
   {
+    id: 'justin-d-banh-mi',
+    contributor: 'Justin D.',
+    course: 'Main',
+    dishName: 'Crispy Pork Belly Banh Mi',
+    ingredients: 'Crispy pork belly, baguette, egg, jalapeño, cilantro',
+    dietaryNotes: ['PORK', 'CONTAINS GLUTEN', 'CONTAINS EGG'],
+    contributorNote: 'Prepared by Justin D.',
+    image: '/Crispy-Pork-Belly-Banh-Mi.jpg',
+    status: 'CONFIRMED',
+    layoutType: 'TypeA'
+  },
+  {
     id: 'steven-main-tbd',
     contributor: 'Steven',
     course: 'Main',
@@ -129,6 +141,18 @@ export const MENU_ITEMS: MenuItemData[] = [
     layoutType: 'TypeA'
   },
   {
+    id: 'ish-s-hummus-pita',
+    contributor: 'Ish S.',
+    course: 'Side',
+    dishName: 'Hummus & Pita',
+    ingredients: 'Hummus: tahini, chickpeas, sumac, olive oil. Pita: flour',
+    dietaryNotes: ['CONTAINS SESAME', 'CONTAINS GLUTEN', 'VEGETARIAN', 'VEGAN'],
+    contributorNote: 'Prepared by Ish S.',
+    image: '/Hummus-and-Pita.jpg',
+    status: 'CONFIRMED',
+    layoutType: 'TypeA'
+  },
+  {
     id: 'jake-arroz-con-leche',
     contributor: 'Jake',
     course: 'Dessert',
@@ -149,6 +173,30 @@ export const MENU_ITEMS: MenuItemData[] = [
     dietaryNotes: ['CONTAINS DAIRY', 'CONTAINS GLUTEN'],
     contributorNote: 'Prepared by Wendy',
     image: '/Portos_Bakery_Cheese_Roll_Recipe.jpg',
+    status: 'CONFIRMED',
+    layoutType: 'TypeA'
+  },
+  {
+    id: 'alex-k-banana-pudding',
+    contributor: 'Alex K.',
+    course: 'Dessert',
+    dishName: 'Banana Pudding',
+    ingredients: 'Bananas, Nilla wafers, pudding mix, Greek yogurt, whey protein powder',
+    dietaryNotes: ['CONTAINS GLUTEN', 'CONTAINS DAIRY', 'VEGETARIAN'],
+    contributorNote: 'Prepared by Alex K.',
+    image: '/Banana-Pudding.jpg',
+    status: 'CONFIRMED',
+    layoutType: 'TypeA'
+  },
+  {
+    id: 'alex-d-passion-fruit-pie',
+    contributor: 'Alex D.',
+    course: 'Dessert',
+    dishName: 'Passion Fruit Pie',
+    ingredients: 'Eggs, graham cracker crust, macadamia nuts, passionfruit, vegan butter, sugary goodness',
+    dietaryNotes: ['CONTAINS NUTS', 'CONTAINS GLUTEN', 'CONTAINS EGG', 'VEGETARIAN'],
+    contributorNote: 'Prepared by Alex D.',
+    image: '/Passion-Fruit-Pie.jpg',
     status: 'CONFIRMED',
     layoutType: 'TypeA'
   },
@@ -194,8 +242,8 @@ export const EVENT_METADATA = {
   subtitle: 'A Private Table',
   date: 'August 12, 2026',
   dateFormatted: '12 AUGUST 2026',
-  contributorCount: 14,
-  confirmedDishCount: 11,
-  cuisineCount: '5+',
+  contributorCount: 18,
+  confirmedDishCount: 15,
+  cuisineCount: '8+',
   whatsappRecipient: '+1 346 566 8004'
 };

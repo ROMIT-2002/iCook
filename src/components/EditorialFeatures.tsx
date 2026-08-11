@@ -38,7 +38,7 @@ export const EditorialFeatures: React.FC = () => {
 
           <div className="flex items-center gap-4">
             <span className="text-xs font-sans tracking-widest text-[#A79C8C]">
-              0{currentIndex + 1} / 0{featuredDishes.length}
+              {String(currentIndex + 1).padStart(2, '0')} / {String(featuredDishes.length).padStart(2, '0')}
             </span>
             <div className="flex items-center gap-2">
               <button

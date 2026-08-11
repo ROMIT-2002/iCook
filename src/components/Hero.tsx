@@ -68,7 +68,7 @@ export const Hero: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="font-serif italic text-xl sm:text-2xl text-[#E5D8C5]/90 mb-3 sm:mb-4 font-light"
         >
-          One table · Eleven kitchens
+          One table · Fifteen kitchens
         </motion.p>
 
         {/* Supporting Narrative */}

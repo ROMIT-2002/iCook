@@ -36,7 +36,7 @@ export const EventIntro: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="font-serif text-4xl sm:text-6xl text-[#211A16] font-normal leading-tight mb-8"
         >
-          “Eleven cooks.{' '}
+          “Fifteen cooks.{' '}
           <span className="italic font-serif text-[#401D20] block sm:inline">
             One unforgettable table.”
           </span>
