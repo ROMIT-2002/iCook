@@ -10,7 +10,7 @@ interface MenuItemProps {
 }
 
 export const MenuItem: React.FC<MenuItemProps> = ({ item, onSelect }) => {
-  // Type B — Tasting Menu Card for TBD Items without Photos
+  // Type B: Tasting Menu Card for TBD Items without Photos
   if (item.layoutType === 'TypeB') {
     return (
       <motion.div
@@ -44,7 +44,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({ item, onSelect }) => {
     );
   }
 
-  // Type A — Premium 60/40 Split Card (Default uniform card layout for all dishes with photos)
+  // Type A: Premium 60/40 Split Card (Default uniform card layout for all dishes with photos)
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

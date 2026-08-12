@@ -112,10 +112,10 @@ export const Hero: React.FC = () => {
           </a>
 
           <a
-            href="#reservations"
+            href="#feedback"
             className="w-full sm:w-auto px-7 py-3.5 bg-[#401D20]/80 hover:bg-[#58272b] text-[#F3EBDD] border border-[#AA8654]/40 hover:border-[#AA8654] font-sans text-xs tracking-aristocrat font-medium transition-all duration-300 backdrop-blur-sm"
           >
-            RESERVE YOUR PLACE
+            SHARE YOUR FEEDBACK
           </a>
         </motion.div>
       </div>

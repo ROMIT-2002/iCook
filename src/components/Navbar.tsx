@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Calendar } from 'lucide-react';
+import { Menu, X, Calendar, Camera } from 'lucide-react';
+import { RouteLink, ROUTES } from '../lib/navigation';
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -14,11 +15,13 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // `route: true` links leave the page entirely; the rest are in-page anchors.
   const navLinks = [
     { name: 'THE TABLE', href: '#gathering' },
     { name: 'THE MENU', href: '#menu' },
     { name: 'EDITORIAL', href: '#editorial' },
-    { name: 'RESERVATIONS', href: '#reservations' },
+    { name: 'GALLERY', href: ROUTES.gallery, route: true },
+    { name: 'FEEDBACK', href: '#feedback' },
   ];
 
   return (
@@ -52,28 +55,43 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-xs font-sans tracking-aristocrat text-[#E5D8C5]/80 hover:text-[#AA8654] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#AA8654] hover:after:w-full after:transition-all after:duration-300"
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const linkClass =
+                "text-xs font-sans tracking-aristocrat text-[#E5D8C5]/80 hover:text-[#AA8654] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#AA8654] hover:after:w-full after:transition-all after:duration-300";
+
+              return link.route ? (
+                <RouteLink key={link.name} to={link.href} className={linkClass}>
+                  {link.name}
+                </RouteLink>
+              ) : (
+                <a key={link.name} href={link.href} className={linkClass}>
+                  {link.name}
+                </a>
+              );
+            })}
           </nav>
 
-          {/* Date Badge & Quick CTA */}
-          <div className="hidden lg:flex items-center gap-4">
+          {/* Date Badge & Quick CTAs */}
+          <div className="hidden lg:flex items-center gap-3">
             <div className="flex items-center gap-2 text-[11px] font-sans tracking-widest text-[#A79C8C] border border-[#AA8654]/30 px-3.5 py-1.5 rounded-full bg-[#211A16]/50">
               <Calendar className="w-3.5 h-3.5 text-[#AA8654]" />
               <span>AUG 12 · 2026</span>
             </div>
+
+            {/* Gallery is the primary destination now that the event has run */}
+            <RouteLink
+              to={ROUTES.gallery}
+              className="group flex items-center gap-2 text-[11px] font-sans tracking-widest uppercase bg-[#AA8654] hover:bg-[#c49d63] text-[#11100E] font-semibold px-4 py-2 transition-all duration-300 shadow-md hover:shadow-[0_0_18px_rgba(170,134,84,0.45)]"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Gallery</span>
+            </RouteLink>
+
             <a
-              href="#reservations"
+              href="#feedback"
               className="text-[11px] font-sans tracking-widest uppercase bg-[#401D20] hover:bg-[#58272b] text-[#F3EBDD] border border-[#AA8654]/40 hover:border-[#AA8654] px-4 py-2 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(170,134,84,0.25)]"
             >
-              Reserve
+              Feedback
             </a>
           </div>
 
@@ -114,30 +132,50 @@ export const Navbar: React.FC = () => {
               </div>
 
               <nav className="flex flex-col gap-6 my-4">
-                {navLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="font-serif text-2xl tracking-wider text-[#F3EBDD] hover:text-[#AA8654] transition-colors"
-                  >
-                    {link.name}
-                  </a>
-                ))}
+                {navLinks.map((link) => {
+                  const linkClass =
+                    'font-serif text-2xl tracking-wider text-[#F3EBDD] hover:text-[#AA8654] transition-colors';
+                  const close = () => setMobileMenuOpen(false);
+
+                  return link.route ? (
+                    <RouteLink
+                      key={link.name}
+                      to={link.href}
+                      onClick={close}
+                      className={linkClass}
+                    >
+                      {link.name}
+                    </RouteLink>
+                  ) : (
+                    <a key={link.name} href={link.href} onClick={close} className={linkClass}>
+                      {link.name}
+                    </a>
+                  );
+                })}
               </nav>
             </div>
 
-            <div className="text-center space-y-4 pt-6 border-t border-[#AA8654]/20">
-              <div className="flex items-center justify-center gap-2 text-xs font-sans tracking-widest text-[#A79C8C]">
+            <div className="text-center space-y-3 pt-6 border-t border-[#AA8654]/20">
+              <div className="flex items-center justify-center gap-2 text-xs font-sans tracking-widest text-[#A79C8C] pb-1">
                 <Calendar className="w-4 h-4 text-[#AA8654]" />
                 <span>AUGUST 12, 2026</span>
               </div>
+
+              <RouteLink
+                to={ROUTES.gallery}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#AA8654] text-[#11100E] text-xs tracking-widest uppercase font-semibold"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Enter the Gallery</span>
+              </RouteLink>
+
               <a
-                href="#reservations"
+                href="#feedback"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block w-full py-3 bg-[#401D20] text-[#F3EBDD] text-xs tracking-widest uppercase border border-[#AA8654]/50"
               >
-                Reserve Your Place
+                Share Your Feedback
               </a>
             </div>
           </motion.div>
